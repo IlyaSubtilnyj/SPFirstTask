@@ -111,9 +111,14 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
         NULL        // Additional application data
     );
 
-    if (hwnd == NULL)
+    if (!hwnd)
     {
-        return 0;
+        MessageBox(NULL,
+            TEXT("Call to CreateWindowEx failed!"),
+            TEXT("Windows Desktop Guided Tour"),
+            NULL);
+
+        return 1;
     }
 
     ShowWindow(hwnd, nCmdShow);
@@ -127,7 +132,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
         DispatchMessage(&msg);
     }
 
-    return 0;
+    return (int)msg.wParam;
 }
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
