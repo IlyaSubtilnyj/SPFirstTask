@@ -3,6 +3,8 @@
 #endif 
 #pragma warning(disable : 4996)
 
+#include "config.h"
+
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,63 +12,28 @@
     be careful in release mode
     check NDEBUGE disallowed
 */
-#include <assert.h> 
+#include <assert.h>
 
-#define SININST
+#include "runningCheck.h";
+#include "debugConsole.h";
+#include "draggCapture.h";
 
 const wchar_t* const CLASS_NAME = L"Sample Window Class";
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-int reRunningCheck() {
-    FILE* loggingStream;
-    errno_t err;
-    char checkInfo[1000];
-    int result = EXIT_SUCCESS;
-
-    HANDLE hGlobalMutex = CreateMutex(NULL, TRUE, TEXT("Global\\instantioation-check-mutex"));
-    DWORD lastError = GetLastError();
-
-    assert(hGlobalMutex && "Error creating mutex");
-
-    sprintf(checkInfo, "CreateMutex => HANDLE : %i; GetLastError() => DWORD : %lu\n", hGlobalMutex, lastError);
-
-    err = fopen_s(&loggingStream, "logging.c", "w+");
-    assert(err == 0 && "The file 'logging.c' was not opened");
-
-    fwrite(checkInfo, strlen(checkInfo), 1, loggingStream);
-
-    if (lastError == ERROR_ALREADY_EXISTS) {
-        fwrite("Mutex already in use! Cannot run.\n", sizeof "Mutex already in use! Cannot run.\n", 1, loggingStream);
-        result = EXIT_FAILURE;
-    }
-    else {
-        fwrite("This is first instance.\n", sizeof "This is first instance.\n", 1, loggingStream);
-    }
-    if (loggingStream) {
-        if (fclose(loggingStream)) {
-            assert(0 && "The file 'logging.c' was not closed");
-        }
-    }
-    if (lastError != ERROR_SUCCESS) {
-        //why is this needed?
-        //https://stackoverflow.com/questions/54152660/createmutex-seems-to-acquire-mutex-even-when-error-already-exists
-        if (hGlobalMutex != NULL)
-        {
-            ReleaseMutex(hGlobalMutex);
-            CloseHandle(hGlobalMutex);
-        }
-    }
-    return result;
-}
-
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
 
-#ifdef SININST
-    int reRunningCheckRes = reRunningCheck();
-    assert(reRunningCheckRes == EXIT_SUCCESS && "seems like program already executing");
+#if 1/SININST==1
+    boolean runningCheck = rcProcessExists();
+    assert(runningCheck == 0 && "seems like program already executing");
 #endif // SINGLE WINAPP INSTANTIATION
+
+    
+#if (1/DEBUGCONSOLE==1) && (1/DEBUG==1)
+    dcCreateConsole();
+#endif
 
     // Register the window class.
     WNDCLASSEX wcex = { 0 };
@@ -82,7 +49,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
     wcex.lpszMenuName = NULL;
     wcex.lpszClassName = CLASS_NAME;
-    wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
+    wcex.hIconSm = wcex.hIcon;
 
     if (!RegisterClassEx(&wcex))
     {
@@ -97,7 +64,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     // Create the window.
 
     HWND hwnd = CreateWindowEx(
-        0,                              // Optional window styles.
+        WS_EX_WINDOWEDGE | WS_EX_ACCEPTFILES,   //DragAcceptFiles(hwnd, TRUE)
         CLASS_NAME,                     // Window class
         L"Learn to Program Windows",    // Window text
         WS_OVERLAPPEDWINDOW,            // Window style
@@ -122,7 +89,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     }
 
     ShowWindow(hwnd, nCmdShow);
-
+    UpdateWindow(hwnd);
     // Run the message loop.
 
     MSG msg = { 0 };
@@ -132,6 +99,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
         DispatchMessage(&msg);
     }
 
+#if (1/DEBUGCONSOLE == 1) && (1/DEBUG == 1)
+    dcFreeConsole();
+#endif
+
     return (int)msg.wParam;
 }
 
@@ -139,8 +110,12 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     switch (uMsg)
     {
+    case WM_DROPFILES:
+        char** names = NULL;
+        drcpt_get_dragged_file_names(wParam, names);
+        return 0;
     case WM_DESTROY:
-        PostQuitMessage(0);
+        PostQuitMessage(4);
         return 0;
 
     case WM_PAINT:
