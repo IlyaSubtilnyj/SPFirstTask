@@ -1,0 +1,7 @@
+#include "resource.h"
+
+IDR_ACCEL1 ACCELERATORS
+{
+    0x43, ID_CLUTCH, VIRTKEY, CONTROL    // ctrl-C
+    0x52, ID_RELEASE, VIRTKEY, CONTROL   // ctrl-R
+}
