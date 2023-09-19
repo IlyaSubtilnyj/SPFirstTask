@@ -13,7 +13,6 @@
     check NDEBUGE disallowed
 */
 #include <assert.h>
-
 #include "runningCheck.h";
 #include "debugConsole.h";
 #include "draggCapture.h";
@@ -27,18 +26,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
-
-#if 1/SININST==1
-    boolean runningCheck = rcProcessExists();
-    assert(runningCheck == 0 && "seems like program already executing");
-#endif // SINGLE WINAPP INSTANTIATION
-
-    
-#if (1/DEBUGCONSOLE==1) && (1/DEBUG==1)
-    dcCreateConsole();
-#endif
-
-    // Register the window class.
     WNDCLASSEX wcex = { 0 };
     wcex.cbSize = sizeof(WNDCLASSEX);
     wcex.style = CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
@@ -52,50 +39,38 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     wcex.lpszMenuName = NULL;
     wcex.lpszClassName = CLASS_NAME;
     wcex.hIconSm = wcex.hIcon;
-
     if (!RegisterClassEx(&wcex))
     {
         MessageBox(NULL,
             TEXT("Call to RegisterClassEx failed!"),
             TEXT("Windows Desktop Guided Tour"),
             NULL);
-
         return 1;
     }
 
-    // Create the window.
     HWND hwnd = CreateWindowEx(
-        WS_EX_WINDOWEDGE | WS_EX_ACCEPTFILES,   //DragAcceptFiles(hwnd, TRUE)
-        CLASS_NAME,                     // Window class
-        L"SPFirstLab",    // Window text
-        WS_OVERLAPPEDWINDOW,            // Window style
-
-        // Size and position
+        WS_EX_WINDOWEDGE | WS_EX_ACCEPTFILES,
+        CLASS_NAME, 
+        L"SPFirstLab", 
+        WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, CW_USEDEFAULT, 1000, 800,
-
-        NULL,       // Parent window    
-        NULL,       // Menu
-        hInstance,  // Instance handle
-        NULL        // Additional application data
+        NULL,
+        NULL,
+        hInstance,
+        NULL  
     );
-
     if (!hwnd)
     {
         MessageBox(NULL,
             TEXT("Call to CreateWindowEx failed!"),
             TEXT("Windows Desktop Guided Tour"),
             NULL);
-
         return 1;
     }
-
     HACCEL hAccel = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDR_ACCEL1));
-
     ShowWindow(hwnd, nCmdShow);
     UpdateWindow(hwnd);
-
     SetTimer(hwnd, IDT_TIMER1, 25,(TIMERPROC)NULL);     
-
     MSG msg = { 0 };
     while (GetMessage(&msg, NULL, 0, 0) > 0)
     {
@@ -104,15 +79,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
             DispatchMessage(&msg);
         }
     }
-
-#if (1/DEBUGCONSOLE == 1) && (1/DEBUG == 1)
-    dcFreeConsole();
-#endif
-
     KillTimer(hwnd, IDT_TIMER1);
-
     DestroyAcceleratorTable(hAccel);
-
     return (int)msg.wParam;
 }
 
@@ -120,6 +88,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     POINT pt;
     POINT dummy = { .x = -1, .y = -1 };
+    static int pointer_handler = 0;
+    static int sprite_handler = 0;
     switch (uMsg)
     {
     case WM_CREATE:
@@ -135,13 +105,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         pt = drcpt_get_dragged_file_names(wParam, &names, &lnamesSize);
         for (size_t i = 0; i < lnamesSize; i++)
         {
-            int pointer_handler = mdltosssprite.sprite.create(names[i], pt);
-            int sprite_handler = mdltosssprite.pointer.create(dummy);
+            pointer_handler = mdltosssprite.sprite.create(names[i], pt);
+            sprite_handler = mdltosssprite.pointer.create(dummy);
             mdltosssprite.bind_sprite_to_pointer(pointer_handler, sprite_handler);
         }
-        break;
-    case WM_MOUSEMOVE:
-        int x = 0;
         break;
     case WM_PAINT:
     {
@@ -200,15 +167,14 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
         pt.x = LOWORD(lParam);
         pt.y = HIWORD(lParam);
-        mdltosssprite.pointer.clutch(1, pt);
+        mdltosssprite.pointer.clutch(pointer_handler, pt);
         break;
     }
     case WM_LBUTTONUP:
     {
-        POINT pt;
         pt.x = LOWORD(lParam);
         pt.y = HIWORD(lParam);
-        mdltosssprite.pointer.release(1, pt);
+        mdltosssprite.pointer.release(pointer_handler, pt);
         break;
     }
     case WM_KEYDOWN:
@@ -227,7 +193,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         {
         case IDT_TIMER1:
             mdltosssprite.pointer.move(0.025f);
-            mdltosssprite.sprite.move(1, 0.025f);
+            mdltosssprite.sprite.move(pointer_handler, 0.025f);
             InvalidateRect(hwnd, NULL, FALSE);
             break;
         }
@@ -237,15 +203,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         switch (LOWORD(wParam))
         {
         case ID_RELEASE:
-            mdltosssprite.pointer.release(1, dummy);
+            mdltosssprite.pointer.release(pointer_handler, dummy);
             break;
         case ID_CLUTCH:
-            mdltosssprite.pointer.clutch(1, dummy);
+            mdltosssprite.pointer.clutch(pointer_handler, dummy);
             break;
         }
     }
-    return 0;
-
     }
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }

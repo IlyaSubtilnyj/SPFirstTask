@@ -73,7 +73,6 @@ int pointer_create_proxy(POINT pcoo) {
 }
 
 void pointer_clutch_wrapper(int pointer_h, POINT point) {
-	int sprite_h = 1;
 	struct _coo coo;
 	if ((point.x == -1) && (point.y == -1)) {
 		point = getRegionSize();
@@ -87,8 +86,8 @@ void pointer_clutch_wrapper(int pointer_h, POINT point) {
 	set_pointer_destination(coo);
 }
 
-void pointer_release_wrapper(int h, POINT pt) {
-	struct _coo destination = get_pointer_destination(h);
+void pointer_release_wrapper(int pointer_h, POINT pt) {
+	struct _coo destination = get_pointer_destination(pointer_h);
 	struct _coo dest;
 	dest.x = pt.x;
 	dest.y = pt.y;

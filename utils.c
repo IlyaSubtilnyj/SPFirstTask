@@ -140,24 +140,15 @@ struct _coo bump(struct _coo ppotentialNextPosition, struct _coo object_center_p
 int util_random(int upper_limit) {
 	HCRYPTPROV hCryptProv;
 	BYTE randomBytes[4];
-
 	if (!CryptAcquireContext(&hCryptProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
 		return 1;
 	}
-
-	// Generate 4 random bytes
 	if (!CryptGenRandom(hCryptProv, sizeof(randomBytes), randomBytes)) {
 		CryptReleaseContext(hCryptProv, 0);
 		return 1;
 	}
-
-	// Convert the random bytes to an integer
 	int randomNumber = (randomBytes[0] << 24) | (randomBytes[1] << 16) | (randomBytes[2] << 8) | randomBytes[3];
-
 	randomNumber %= upper_limit;
-
-	// Release the cryptographic service provider handle
 	CryptReleaseContext(hCryptProv, 0);
-
 	return randomNumber;
 }
