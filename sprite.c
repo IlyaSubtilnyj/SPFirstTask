@@ -2,6 +2,8 @@
 #include "sprite.h"
 #undef SPRITEIMPL
 
+#define id 1
+
 struct toss_sprite {
 	HBITMAP hBitmap;
 	BITMAP bitmap;
@@ -12,19 +14,24 @@ struct toss_sprite {
 
 static struct toss_sprite object = { 0 };
 
-struct _coo sprite_get_center(BITMAP pbitmap);
-int sprite_create(wchar_t* pbitmapFileName, POINT pdropCoordinates) 
+struct _coo sprite_get_center_by_bitmap(BITMAP pbitmap);
+int sprite_create(wchar_t* pbitmapFileName, POINT pdropCoordinates, DWORD* err) 
 {
-	int result = 0;
+	int result = id;
 	BITMAP lbitmap;
 	HBITMAP lhBitmap = (HBITMAP)LoadImage(NULL, pbitmapFileName, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 	if (lhBitmap != NULL) {
 		GetObject(lhBitmap, sizeof(lbitmap), &lbitmap);
 		object.hBitmap = lhBitmap;
 		object.bitmap = lbitmap;
-		object.center = sprite_get_center(object.bitmap);
+		object.center = sprite_get_center_by_bitmap(object.bitmap);
 		object.coordinate = cooAdd(utilConvertWinPointToCoo(pdropCoordinates), object.center);
-	} else result = GetLastError();
+	} 
+	else
+	{
+		*err = GetLastError();
+		result = -1;
+	}
 	return result;
 }
 
@@ -54,7 +61,9 @@ void sprite_draw(HDC towhich, HDC whence) {
 
 boolean is_sprite(int sprite_h)
 {
-	return TRUE;
+	if (sprite_h == id)
+		return TRUE;
+	else return FALSE;
 }
 
 POINT sprite_get_draw_coordinate(struct toss_sprite sprite) {
@@ -64,7 +73,14 @@ POINT sprite_get_draw_coordinate(struct toss_sprite sprite) {
 	return result;
 }
 
-struct _coo sprite_get_center(BITMAP pbitmap) {
+struct _coo sprite_get_center(int pspriteh) {
+	struct _coo result = { .x = -1, .y = -1 };
+	if (id == pspriteh)
+		result = object.center;
+	return result;
+}
+
+static struct _coo sprite_get_center_by_bitmap(BITMAP pbitmap) {
 	struct _coo result = { 0 };
 	result.x = (float)pbitmap.bmWidth / 2;
 	result.y = (float)pbitmap.bmHeight / 2;

@@ -136,8 +136,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         for (size_t i = 0; i < lnamesSize; i++)
         {
             int pointer_handler = mdltosssprite.sprite.create(names[i], pt);
-            POINT _pointer_coo = { .x = 190, .y = 190 };
-            int sprite_handler = mdltosssprite.pointer.create(_pointer_coo);
+            int sprite_handler = mdltosssprite.pointer.create(dummy);
             mdltosssprite.bind_sprite_to_pointer(pointer_handler, sprite_handler);
         }
         break;

@@ -32,10 +32,9 @@ void destroy(HWND phWnd) {
 	sprite_destroy();
 }
 
-//TO-DO:...
-void bindSpToP(int pointer_h, int sprite_h) {
+static void bindSpToP(int pointer_h, int sprite_h) {
 	if (!(is_pointer(pointer_h) && is_sprite(sprite_h))) return;
-	
+	pointer_set_size(pointer_h, sprite_get_center(sprite_h));
 }
 
 POINT getRegionSize() {
@@ -59,9 +58,18 @@ void sprite_move_wrapper(int pointer_h, float time) {
 	dump_set_region_borders(getRegionSize());
 	struct _coo destination = get_pointer_destination(pointer_h);
 	sprite_move(destination, time, &bumped_code);
-	struct _coo lpointerSize = { .x = 73, .y = 93 };
+	struct _coo lpointerSize = pointer_get_size(pointer_h);
 	struct _coo new_pointer_destination = bump(destination, lpointerSize, &bumped_code);
 	set_pointer_destination(new_pointer_destination);
+}
+
+int pointer_create_proxy(POINT pcoo) {
+	if ((pcoo.x = -1) && (pcoo.y == -1)) {
+		POINT reg_size = getRegionSize();
+		pcoo.x = util_random(reg_size.x);
+		pcoo.y = util_random(reg_size.y);
+	}
+	return pointer_create(pcoo);
 }
 
 void pointer_clutch_wrapper(int pointer_h, POINT point) {
@@ -90,10 +98,11 @@ void pointer_release_wrapper(int h, POINT pt) {
 }
 
 int sprite_create_wrapper(wchar_t* pBitmapName, POINT pdropCoordinates) {
-	if (!mdl.initialized) return 1;
-	if (sprite_create(pBitmapName, pdropCoordinates)) {
-		MessageBox(ghWnd, L"Failed to load image", L"Error", MB_OK);
-	}
+	int result = -1;
+	DWORD err;
+	if (!mdl.initialized) return result;
+	result = sprite_create(pBitmapName, pdropCoordinates, &err);
+	return result;
 }
 
 struct _toss_sprite_namespace mdltosssprite = {
@@ -103,7 +112,7 @@ struct _toss_sprite_namespace mdltosssprite = {
 		.draw = sprite_draw
 	},
 	.pointer = {
-		.create = pointer_create,
+		.create = pointer_create_proxy,
 		.get_moving = pointer_get_moving,
 		.move = pointer_move,
 		.stop = pointer_stop,

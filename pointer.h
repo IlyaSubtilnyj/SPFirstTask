@@ -15,6 +15,7 @@ void pointer_draw(HDC);
 boolean is_pointer(int);
 struct _coo get_pointer_destination(int handler);
 void set_pointer_destination(struct _coo destination);
-
+void pointer_set_size(int ppointerh, struct _coo psize);
+struct _coo pointer_get_size(int ppointerh);
 
 #endif
